@@ -6,7 +6,7 @@ import base64
 from voice_commands import recognize_command
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'C:/Users/hp/OneDrive/Documents/DURHAM/AIDI SEM 2/AIDI 2005/project/upload/'
+app.config['UPLOAD_FOLDER'] = r'C:\Users\vybha\Desktop\TK\Capstone\PixieSketch\Local_Run\upload'
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
 
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
@@ -16,15 +16,33 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 def convert_to_sketch(image_path, colored=False):
+    # Step 1: Read the image
     image = cv2.imread(image_path)
+    
+    # Step 2: Convert the image to grayscale
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    # Step 3: Invert the grayscale image
     inverted_image = cv2.bitwise_not(gray_image)
+    
+    # Step 4: Apply Gaussian Blur to the inverted image
     blur_image = cv2.GaussianBlur(inverted_image, (21, 21), sigmaX=0, sigmaY=0)
+    
+    # Step 5: Invert the blurred image
     inverted_blur = cv2.bitwise_not(blur_image)
+    
+    # Step 6: Create the pencil sketch effect by dividing the grayscale image by the inverted blurred image
     sketch_image = cv2.divide(gray_image, inverted_blur, scale=256.0)
+    
     if colored:
-        sketch_image = cv2.cvtColor(sketch_image, cv2.COLOR_GRAY2BGR)
-    return sketch_image
+        # If colored is True, combine the sketch with the original image's color
+        # Step 7: Create a color sketch by blending the original image with the sketch
+        color_image = cv2.cvtColor(sketch_image, cv2.COLOR_GRAY2BGR)
+        blended = cv2.addWeighted(image, 0.6, color_image, 0.4, 0)
+        return blended
+    
+    # Convert the sketch image to BGR before returning
+    return cv2.cvtColor(sketch_image, cv2.COLOR_GRAY2BGR)
 
 @app.route('/')
 def index():

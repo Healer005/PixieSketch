@@ -2,11 +2,55 @@
 <html>
 <head>
     <title>Edit Image</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            text-align: center;
+            padding: 50px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        form {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+        input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #008cba;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        input[type="submit"]:hover {
+            background-color: #005f5f;
+        }
+        img {
+            margin-top: 20px;
+            max-width: 80%;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 <body>
     <h1>Edit Image</h1>
     <form method="post">
-        <input type="checkbox" name="colored"> Colored Sketch<br>
+        <label><input type="checkbox" name="colored"> Colored Sketch</label>
         <input type="submit" value="Convert to Sketch">
     </form>
     {% if sketch_data %}

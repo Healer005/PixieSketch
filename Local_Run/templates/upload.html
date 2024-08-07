@@ -2,11 +2,45 @@
 <html>
 <head>
     <title>Upload Image</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            text-align: center;
+            padding: 50px;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+        input[type="file"] {
+            display: block;
+            margin: 10px 0;
+        }
+        input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #008cba;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #005f5f;
+        }
+    </style>
 </head>
 <body>
     <h1>Upload Image</h1>
     <form method="post" enctype="multipart/form-data">
-        <input type="file" name="file">
+        <input type="file" name="file" accept="image/*"><br>
         <input type="submit" value="Upload">
     </form>
 </body>
