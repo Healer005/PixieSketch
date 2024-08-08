@@ -4,6 +4,7 @@ import cv2
 import os
 import base64
 from voice_commands import recognize_command
+import subprocess
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = r'C:\Users\vybha\Desktop\TK\Capstone\PixieSketch\Local_Run\upload'
@@ -15,34 +16,30 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
-def convert_to_sketch(image_path, colored=False):
-    # Step 1: Read the image
+def convert_to_sketch(image_path, output_path, colored=False, style='pencil', intensity=1):
     image = cv2.imread(image_path)
-    
-    # Step 2: Convert the image to grayscale
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    
-    # Step 3: Invert the grayscale image
     inverted_image = cv2.bitwise_not(gray_image)
-    
-    # Step 4: Apply Gaussian Blur to the inverted image
     blur_image = cv2.GaussianBlur(inverted_image, (21, 21), sigmaX=0, sigmaY=0)
-    
-    # Step 5: Invert the blurred image
     inverted_blur = cv2.bitwise_not(blur_image)
-    
-    # Step 6: Create the pencil sketch effect by dividing the grayscale image by the inverted blurred image
     sketch_image = cv2.divide(gray_image, inverted_blur, scale=256.0)
     
+    if style == 'charcoal':
+        kernel = np.ones((5,5),np.uint8)
+        sketch_image = cv2.dilate(sketch_image, kernel, iterations=1)
+    
+    if intensity != 1:
+        sketch_image = cv2.multiply(sketch_image, np.array([intensity]))
+    
     if colored:
-        # If colored is True, combine the sketch with the original image's color
-        # Step 7: Create a color sketch by blending the original image with the sketch
         color_image = cv2.cvtColor(sketch_image, cv2.COLOR_GRAY2BGR)
         blended = cv2.addWeighted(image, 0.6, color_image, 0.4, 0)
-        return blended
+        sketch_image = blended
     
-    # Convert the sketch image to BGR before returning
-    return cv2.cvtColor(sketch_image, cv2.COLOR_GRAY2BGR)
+    sketch_image_bgr = cv2.cvtColor(sketch_image, cv2.COLOR_GRAY2BGR) if len(sketch_image.shape) == 2 else sketch_image
+    cv2.imwrite(output_path, sketch_image_bgr)
+    
+    return sketch_image_bgr
 
 @app.route('/')
 def index():
@@ -66,13 +63,23 @@ def upload_file():
 @app.route('/edit/<filename>', methods=['GET', 'POST'])
 def edit_file(filename):
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    output_path = os.path.join(app.config['UPLOAD_FOLDER'], 'output_' + filename)
     if request.method == 'POST':
-        colored = 'colored' in request.form
-        sketch_image = convert_to_sketch(file_path, colored)
+        sketch_option = request.form.get('sketch_options')
+        colored = sketch_option == 'colored'
+        style = 'charcoal' if sketch_option == 'charcoal' else 'pencil'
+        intensity = float(request.form.get('intensity', 1))
+        sketch_image = convert_to_sketch(file_path, output_path, colored, style, intensity)
         _, buffer = cv2.imencode('.png', sketch_image)
         sketch_data = base64.b64encode(buffer).decode('utf-8')
-        return render_template('edit.html', sketch_data=sketch_data)
+        return render_template('edit.html', sketch_data=sketch_data, filename=filename, output_filename='output_' + filename)
     return render_template('edit.html', filename=filename)
+
+@app.route('/export_to_paint/<output_filename>', methods=['POST'])
+def export_to_paint(output_filename):
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
+    subprocess.run(['mspaint', file_path])
+    return redirect(url_for('edit_file', filename=output_filename))
 
 @app.route('/voice-command', methods=['POST'])
 def voice_command():
