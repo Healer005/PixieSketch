@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Your Image</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Kristen ITC', cursive;
+            background: url('{{ url_for('static', filename='background.jpg') }}') no-repeat center center fixed;
+            background-size: cover;
+            color: #333;
+            text-align: center;
+            padding: 50px;
+        }
+        h2 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: #fff; /* Makes the text white */
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7); /* Adds a shadow for contrast */
+            background-color: rgba(0, 0, 0, 0.5); /* Adds a semi-transparent black background */
+            padding: 10px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+        .toolbar {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 30px;
+            border: 2px solid #ddd;
+            border-radius: 15px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .toolbar label, .toolbar button, .toolbar input {
+            margin: 10px;
+            font-size: 1.5em;
+            font-family: 'Kristen ITC', cursive;
+        }
+        canvas {
+            border: 2px solid #000;
+            margin-top: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            cursor: crosshair; /* Default cursor for the canvas */
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-color: white; /* Set the canvas background to white */
+        }
+        .button {
+            padding: 15px 30px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.5em;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease-in-out;
+            margin-top: 20px;
+            text-decoration: none;
+            font-family: 'Kristen ITC', cursive;
+        }
+        .button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05); /* Adds a scaling effect */
+        }
+
+        /* New styles for navigation buttons */
+        .nav-buttons {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
+        .nav-buttons a {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 10px;
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 30px;
+            font-size: 1.2em;
+            text-decoration: none;
+            transition: background-color 0.3s ease, transform 0.2s ease-in-out;
+        }
+        .nav-buttons a i {
+            margin-right: 8px;
+        }
+        .nav-buttons a:hover {
+            background-color: #0056b3;
+            transform: scale(1.05); /* Adds a scaling effect */
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-buttons">
+        <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
+        <a href="{{ url_for('upload_file') }}"><i class="fas fa-upload"></i> Upload New File</a>
+    </div>
+    <h2>Edit Your Image</h2>
+    <!-- Paint tool section -->
+    <div class="toolbar">
+        <label for="color-picker" class="color-picker">Color: <input type="color" id="color-picker" value="#000000"></label>
+        <label for="brush-size" class="brush-size">Brush Size: <input type="range" id="brush-size" min="1" max="20" value="5"></label>
+        <button id="draw-line">Draw Line</button>
+        <button id="draw-rect">Draw Rectangle</button>
+        <button id="draw-circle">Draw Circle</button>
+        <button id="erase">Erase</button>
+        <button id="clear">Clear All</button>
+        <button id="undo">Undo</button>
+        <button id="redo">Redo</button>
+        <button id="text-tool">Add Text</button>
+        <button id="fill-tool">Fill</button>
+        <label for="shape-fill">Shape Fill: <input type="checkbox" id="shape-fill"></label>
+    </div>
+    <canvas id="paint-canvas" width="800" height="600"></canvas>
+    <div>
+        <a href="#" id="save-image" class="button">Save Edited Image</a>
+        <a href="#" id="download-image" class="button">Download Edited Image</a>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('paint-canvas');
+        const ctx = canvas.getContext('2d');
+        let painting = false;
+        let brushColor = document.getElementById('color-picker').value;
+        let brushSize = document.getElementById('brush-size').value;
+        let currentTool = 'brush';
+        let startX, startY;
+        let actions = [];
+        let undoneActions = [];
+        let shapeFill = false;
+
+        // Set canvas background to white initially
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Load the converted image into the canvas
+        const img = new Image();
+        img.src = "data:image/png;base64,{{ image_data }}";
+        img.onload = function () {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        };
+
+        // Tool selection logic
+        document.getElementById('draw-line').addEventListener('click', function () {
+            currentTool = 'line';
+            canvas.style.cursor = 'crosshair';
+        });
+
+        document.getElementById('draw-rect').addEventListener('click', function () {
+            currentTool = 'rect';
+            canvas.style.cursor = 'crosshair';
+        });
+
+        document.getElementById('draw-circle').addEventListener('click', function () {
+            currentTool = 'circle';
+            canvas.style.cursor = 'crosshair';
+        });
+
+        document.getElementById('erase').addEventListener('click', function () {
+            currentTool = 'eraser';
+            canvas.style.cursor = 'not-allowed';
+        });
+
+        document.getElementById('shape-fill').addEventListener('change', function () {
+            shapeFill = this.checked;
+        });
+
+        document.getElementById('undo').addEventListener('click', undo);
+        document.getElementById('redo').addEventListener('click', redo);
+
+        document.getElementById('text-tool').addEventListener('click', function () {
+            currentTool = 'text';
+            canvas.style.cursor = 'text';
+        });
+
+        document.getElementById('fill-tool').addEventListener('click', function () {
+            currentTool = 'fill';
+            canvas.style.cursor = 'crosshair';
+        });
+
+        // Brush and shape drawing
+        function startPosition(e) {
+            painting = true;
+            startX = e.clientX - canvas.offsetLeft;
+            startY = e.clientY - canvas.offsetTop;
+            if (currentTool === 'brush') draw(e);
+            if (currentTool === 'text') addText(e);
+            if (currentTool === 'fill') fillArea(startX, startY);
+        }
+
+        function endPosition(e) {
+            if (painting) {
+                if (currentTool === 'line') drawLine(e);
+                if (currentTool === 'rect') drawRect(e);
+                if (currentTool === 'circle') drawCircle(e);
+                saveAction();
+            }
+            painting = false;
+            ctx.beginPath();
+        }
+
+        function draw(e) {
+            if (!painting) return;
+            ctx.lineWidth = brushSize;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = brushColor;
+
+            if (currentTool === 'brush') {
+                ctx.lineTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+            } else if (currentTool === 'eraser') {
+                ctx.clearRect(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop, brushSize, brushSize);
+            }
+        }
+
+        function drawLine(e) {
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+            ctx.strokeStyle = brushColor;
+            ctx.lineWidth = brushSize;
+            ctx.stroke();
+        }
+
+        function drawRect(e) {
+            ctx.beginPath();
+            if (shapeFill) {
+                ctx.fillStyle = brushColor;
+                ctx.fillRect(startX, startY, e.clientX - canvas.offsetLeft - startX, e.clientY - canvas.offsetTop - startY);
+            } else {
+                ctx.rect(startX, startY, e.clientX - canvas.offsetLeft - startX, e.clientY - canvas.offsetTop - startY);
+                ctx.strokeStyle = brushColor;
+                ctx.lineWidth = brushSize;
+                ctx.stroke();
+            }
+        }
+
+        function drawCircle(e) {
+            ctx.beginPath();
+            const radius = Math.sqrt(Math.pow(e.clientX - canvas.offsetLeft - startX, 2) + Math.pow(e.clientY - canvas.offsetTop - startY, 2));
+            if (shapeFill) {
+                ctx.fillStyle = brushColor;
+                ctx.arc(startX, startY, radius, 0, 2 * Math.PI);
+                ctx.fill();
+            } else {
+                ctx.arc(startX, startY, radius, 0, 2 * Math.PI);
+                ctx.strokeStyle = brushColor;
+                ctx.lineWidth = brushSize;
+                ctx.stroke();
+            }
+        }
+
+        function addText(e) {
+            const text = prompt('Enter the text:');
+            if (text) {
+                ctx.font = `${brushSize * 5}px Arial`;
+                ctx.fillStyle = brushColor;
+                ctx.fillText(text, e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+                saveAction();
+            }
+        }
+
+        function fillArea(x, y) {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const startColor = getColorAtPixel(imageData, x, y);
+            const fillColor = hexToRgb(brushColor);
+            floodFill(imageData, x, y, startColor, fillColor);
+            ctx.putImageData(imageData, 0, 0);
+            saveAction();
+        }
+
+        function getColorAtPixel(imageData, x, y) {
+            const index = (y * imageData.width + x) * 4;
+            return [
+                imageData.data[index],
+                imageData.data[index + 1],
+                imageData.data[index + 2],
+                imageData.data[index + 3]
+            ];
+        }
+
+        function floodFill(imageData, x, y, startColor, fillColor) {
+            const stack = [[x, y]];
+            const width = imageData.width;
+            const height = imageData.height;
+
+            while (stack.length) {
+                const [currentX, currentY] = stack.pop();
+                if (currentX < 0 || currentY < 0 || currentX >= width || currentY >= height) continue;
+                const index = (currentY * width + currentX) * 4;
+
+                if (
+                    imageData.data[index] === startColor[0] &&
+                    imageData.data[index + 1] === startColor[1] &&
+                    imageData.data[index + 2] === startColor[2] &&
+                    imageData.data[index + 3] === startColor[3]
+                ) {
+                    imageData.data[index] = fillColor.r;
+                    imageData.data[index + 1] = fillColor.g;
+                    imageData.data[index + 2] = fillColor.b;
+                    imageData.data[index + 3] = 255;
+
+                    stack.push([currentX + 1, currentY]);
+                    stack.push([currentX - 1, currentY]);
+                    stack.push([currentX, currentY + 1]);
+                    stack.push([currentX, currentY - 1]);
+                }
+            }
+        }
+
+        function hexToRgb(hex) {
+            const bigint = parseInt(hex.slice(1), 16);
+            return {
+                r: (bigint >> 16) & 255,
+                g: (bigint >> 8) & 255,
+                b: bigint & 255
+            };
+        }
+
+        function saveAction() {
+            undoneActions = [];
+            actions.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+        }
+
+        function undo() {
+            if (actions.length > 0) {
+                undoneActions.push(actions.pop());
+                ctx.putImageData(actions[actions.length - 1], 0, 0);
+            }
+        }
+
+        function redo() {
+            if (undoneActions.length > 0) {
+                actions.push(undoneActions.pop());
+                ctx.putImageData(actions[actions.length - 1], 0, 0);
+            }
+        }
+
+        // Event Listeners
+        canvas.addEventListener('mousedown', startPosition);
+        canvas.addEventListener('mouseup', endPosition);
+        canvas.addEventListener('mousemove', draw);
+
+        // Update brush size and color
+        document.getElementById('color-picker').addEventListener('input', function () {
+            brushColor = this.value;
+        });
+
+        document.getElementById('brush-size').addEventListener('input', function () {
+            brushSize = this.value;
+        });
+
+        // Clear the canvas
+        document.getElementById('clear').addEventListener('click', function () {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height); // Reload the white background
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height); // Reload the image
+            saveAction();
+        });
+
+        // Save the edited image
+        document.getElementById('save-image').addEventListener('click', function () {
+            const editedImageData = canvas.toDataURL('image/png');
+            const formData = new FormData();
+            formData.append('edited_image_data', editedImageData);
+
+            fetch('{{ url_for("save_paint", output_filename=output_filename) }}', {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    window.location.href = '{{ url_for("edit_file", filename=output_filename) }}';
+                } else {
+                    alert('Failed to save the edited image.');
+                }
+            });
+        });
+
+        // Download the edited image
+        document.getElementById('download-image').addEventListener('click', function () {
+            const editedImageData = canvas.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = editedImageData;
+            a.download = 'edited_image.png';
+            a.click();
+        });
+
+        // Save the initial state
+        saveAction();
+
+    </script>
+</body>
+</html>
