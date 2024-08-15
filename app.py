@@ -1,15 +1,14 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for, jsonify, send_file
 import numpy as np
 import cv2
 import os
 import base64
-import subprocess
 from azure.storage.blob import BlobServiceClient, ContainerClient
 from io import BytesIO
 
 app = Flask(__name__)
 
-connect_str = os.getenv('AZURE_STORAGE_CLIENT')
+connect_str = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
 container_name = 'photos'
 
 # Set your Azure Blob Storage connection string and container name
@@ -86,19 +85,33 @@ def edit_file(filename):
         sketch_image = convert_to_sketch(image_bytes, output_filename, colored, style, intensity)
         sketch_data = base64.b64encode(sketch_image).decode('utf-8')
         
+        # Pass both `filename` and `output_filename` to the template
         return render_template('edit.html', sketch_data=sketch_data, filename=filename, output_filename=output_filename)
-    return render_template('edit.html', filename=filename)
+    
+    # Ensure output_filename is always available
+    return render_template('edit.html', filename=filename, output_filename=None)
 
-@app.route('/export_to_paint/<output_filename>', methods=['POST'])
-def export_to_paint(output_filename):
-    # Download the image from Azure Blob Storage
+@app.route('/download/<output_filename>', methods=['GET'])
+def download_image(output_filename):
     blob_client = container_client.get_blob_client(output_filename)
-    image_path = os.path.join(os.getenv('UPLOAD_FOLDER', '.'), output_filename)
+    download_stream = blob_client.download_blob()
+    return send_file(BytesIO(download_stream.readall()), mimetype='image/png', as_attachment=True, download_name=output_filename)
+
+@app.route('/paint/<output_filename>', methods=['GET', 'POST'])
+def paint(output_filename):
+    blob_client = container_client.get_blob_client(output_filename)
+    download_stream = blob_client.download_blob()
+    image_data = base64.b64encode(download_stream.readall()).decode('utf-8')
+    return render_template('paint.html', image_data=image_data, output_filename=output_filename)
+
+@app.route('/save_paint/<output_filename>', methods=['POST'])
+def save_paint(output_filename):
+    edited_image_data = request.form.get('edited_image_data')
+    image_data = base64.b64decode(edited_image_data.split(',')[1])
+
+    # Save the edited image back to Azure Blob Storage
+    container_client.upload_blob(name=output_filename, data=BytesIO(image_data), overwrite=True)
     
-    with open(image_path, 'wb') as file:
-        file.write(blob_client.download_blob().readall())
-    
-    subprocess.run(['mspaint', image_path])
     return redirect(url_for('edit_file', filename=output_filename))
 
 @app.route('/voice-command', methods=['POST'])
