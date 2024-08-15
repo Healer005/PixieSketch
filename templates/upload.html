@@ -1,50 +1,104 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Image</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
+            font-family: 'Kristen ITC', cursive;
+            background: url('{{ url_for('static', filename='background.jpg') }}') no-repeat center center fixed;
+            background-size: cover;
+            color: #333;
             text-align: center;
             padding: 50px;
         }
         h1 {
-            color: #333;
-            font-size: 3em;
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            color: #fff; /* Makes the text white */
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7); /* Adds a shadow for contrast */
+            background-color: rgba(0, 0, 0, 0.5); /* Adds a semi-transparent black background */
+            padding: 10px;
+            border-radius: 10px;
+            display: inline-block;
         }
         form {
             display: inline-block;
             margin-top: 20px;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 10px;
+            padding: 30px;
+            border: 2px solid #ddd;
+            border-radius: 15px;
             background-color: #fff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease-in-out;
+        }
+        form:hover {
+            transform: scale(1.05);
         }
         input[type="file"] {
             display: block;
-            margin: 20px 0;
-            font-size: 1.5em;
+            margin: 20px auto;
+            font-size: 1.2em;
+            padding: 10px;
+            background-color: #f4f4f9;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        input[type="file"]:hover {
+            background-color: #e0eafc;
         }
         input[type="submit"] {
-            padding: 20px 40px;
-            background-color: #008cba;
+            padding: 15px 30px;
+            background-color: #007bff;
             color: #fff;
             border: none;
-            border-radius: 10px;
-            font-size: 2em;
+            border-radius: 50px;
+            font-size: 1.5em;
             cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease-in-out;
+            font-family: 'Kristen ITC', cursive; 
         }
         input[type="submit"]:hover {
-            background-color: #005f5f;
+            background-color: #0056b3;
+            transform: scale(1.1);
+        }
+
+        /* New styles for the Home button */
+        .home-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 30px;
+            font-size: 1.2em;
+            text-decoration: none;
+            transition: background-color 0.3s ease, transform 0.2s ease-in-out;
+            display: inline-flex;
+            align-items: center;
+        }
+        .home-button i {
+            margin-right: 8px;
+        }
+        .home-button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
         }
     </style>
 </head>
 <body>
+    <a href="{{ url_for('index') }}" class="home-button"><i class="fas fa-home"></i> Home</a>
     <h1>Upload Image</h1>
-    <form method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept="image/*"><br>
-        <input type="submit" value="Upload">
-    </form>
+    <div>
+        <form method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept="image/*"><br>
+            <input type="submit" value="Upload">
+        </form>
+    </div>
 </body>
 </html>
