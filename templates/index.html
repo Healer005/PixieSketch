@@ -1,36 +1,57 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image to Pencil Sketch App</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
+            font-family: 'Kristen ITC', cursive;
+            background: url('{{ url_for('static', filename='background.jpg') }}') no-repeat center center fixed;
+            background-size: cover;
+            color: #333;
             text-align: center;
             padding: 50px;
         }
         h1 {
-            color: #333;
-            font-size: 3em;
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            color: #fff; /* Makes the text white */
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7); /* Adds a shadow for contrast */
+            background-color: rgba(0, 0, 0, 0.5); /* Adds a semi-transparent black background */
+            padding: 10px;
+            border-radius: 10px;
+            display: inline-block;
         }
         a {
             display: inline-block;
-            margin-top: 20px;
-            padding: 20px 40px;
-            background-color: #008cba;
+            margin-top: 30px;
+            padding: 15px 30px;
+            background-color: #007bff;
             color: #fff;
             text-decoration: none;
-            border-radius: 10px;
-            font-size: 2em;
+            border-radius: 50px;
+            font-size: 1.5em;
+            transition: background-color 0.3s ease, transform 0.2s ease-in-out;
         }
         a:hover {
-            background-color: #005f5f;
+            background-color: #0056b3;
+            transform: scale(1.1);
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
         }
     </style>
 </head>
 <body>
-    <h1>Welcome to Image to Pencil Sketch App</h1>
-    <a href="{{ url_for('upload_file') }}">Upload Image</a>
+    <div class="container">
+        <h1>Welcome to Image to Pencil Sketch App</h1>
+        <a href="{{ url_for('upload_file') }}">Upload Image</a>
+    </div>
 </body>
 </html>
